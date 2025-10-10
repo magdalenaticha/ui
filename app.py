@@ -11,6 +11,7 @@ st.title("Gene Analysis Dashboard")
 st.markdown("Explore gene expression patterns, survival relationships, and treatment responses")
 
 
+
 @st.cache_data
 def generate_complete_sample_data():
     n_patients = 200
@@ -19,6 +20,10 @@ def generate_complete_sample_data():
         'patient_id': [f'PAT_{i:03d}' for i in range(n_patients)],
         'age': np.random.normal(65, 10, n_patients).astype(int),
         'gender': np.random.choice(['Male', 'Female'], n_patients),
+        'cancer_type': np.random.choice(
+            ['Squamous', 'Smallcell', 'Adeno', 'Large'], 
+            n_patients, 
+            p=[0.25, 0.35, 0.20, 0.20]),
         'stage': np.random.choice(['I', 'II', 'III', 'IV'], n_patients, p=[0.3, 0.4, 0.2, 0.1]),
         'treatment': np.random.choice(['Drug_A', 'Drug_B', 'Placebo'], n_patients),
     })
@@ -49,12 +54,51 @@ def generate_complete_sample_data():
 
 clinical_df, expression_df, gene_list = generate_complete_sample_data()
 
+def load_gene_info():
+    """Load gene information from CSV file"""
+    try:
+        gene_info_df = pd.read_csv('gene_info.csv')
+        # Convert to dictionary for easy lookup: {gene_name: {info...}}
+        return gene_info_df.set_index('gene').to_dict(orient='index')
+    except FileNotFoundError:
+        st.sidebar.warning("Gene info file not found. Using default descriptions.")
+        return {}
+
 # sidebar
 st.sidebar.header("Analysis Controls")
 
 # gene selection
 selected_gene = st.sidebar.selectbox("Select Gene to Analyze:", gene_list)
 
+gene_info = load_gene_info()
+st.sidebar.markdown("---")
+st.sidebar.header("Gene Information")
+gene_values = expression_df[selected_gene]
+gene_mean = gene_values.mean()
+gene_std = gene_values.std()
+
+if selected_gene in gene_info:
+    info = gene_info[selected_gene]
+    
+    # Create a nice formatted message
+    description = f"""
+    **{selected_gene}** - {info.get('category', 'Unknown Category')}
+    
+    {info.get('description', 'No description available.')}
+    
+    *Clinical Significance: {info.get('clinical_significance', 'Unknown')}*
+    """
+    st.sidebar.info(description)
+else:
+    expression_level = "High" if gene_mean > 2 else "Medium" if gene_mean > 1 else "Low"
+    st.sidebar.info(f"""
+    **{selected_gene}** - Exploratory Gene
+    
+    This gene shows {expression_level.lower()} expression levels across the patient cohort.
+    Further analysis is recommended to determine clinical significance.
+    
+    *Clinical Significance: Under Investigation*
+    """)
 survival_threshold = st.sidebar.slider("Survival Analysis Threshold (%):", 
                                       min_value=10, max_value=90, value=50,)
 
@@ -85,14 +129,6 @@ with dist_col1:
                            nbins=30, color_discrete_sequence=['#1f77b4'])
     st.plotly_chart(fig_dist, use_container_width=True)
 
-with dist_col2:
-    clinical_var = st.selectbox("Group by clinical variable:", 
-                               ['gender', 'stage', 'treatment'])
-    merged_data = expression_df.merge(clinical_df, on='patient_id')
-    fig_box = px.box(merged_data, x=clinical_var, y=selected_gene,
-                    title=f"{selected_gene} Expression by {clinical_var}",
-                    color=clinical_var)
-    st.plotly_chart(fig_box, use_container_width=True)
 
 st.header("Survival Analysis")
 
