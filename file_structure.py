@@ -2,6 +2,7 @@ import h5py
 import pandas as pd
 import streamlit as st
 
+
 def explore_h5_file(file_path):
     """Explore the structure of the HDF5 file"""
     
