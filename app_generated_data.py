@@ -31,7 +31,7 @@ def generate_complete_sample_data():
     # survival data in days
     base_survival = np.random.exponential(365, n_patients)
     
-    gene_names = [f'GENE_{i:03d}' for i in range(n_genes)]
+    gene_names = ['BRAF', 'KRAS', 'MSI', 'grade', 'site', 'trtgrp']
     expression_data = pd.DataFrame()
     
     for i, gene in enumerate(gene_names):
@@ -64,7 +64,8 @@ def load_gene_info():
         st.sidebar.warning("Gene info file not found. Using default descriptions.")
         return {}
 
-# sidebar
+
+
 st.sidebar.header("Analysis Controls")
 
 # gene selection
