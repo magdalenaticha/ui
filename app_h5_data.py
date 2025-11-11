@@ -322,6 +322,8 @@ def main():
     # biomarker selection table for clinical biomarkers
     selected_clinical_biomarker = create_biomarker_selection_table(clinical_df)
 
+    total_patients = len(clinical_df)
+    
     if selected_clinical_biomarker:
         # Use clinical biomarker if selected
         biomarker_display, biomarker_column, selected_value = selected_clinical_biomarker
